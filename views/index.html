@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/style.css">
+    <title>Spotify Search</title>
+</head>
+<body>
+<h1>Spotify Song Search</h1>
+<form id="search-form">
+    <input type="text" id="query" placeholder="Enter song or artist name" required>
+    <button type="submit">Search</button>
+</form>
+<p id="error" class="error"></p>
+<div id="results" class="results"></div>
+
+<script>
+    document.getElementById('search-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const query = document.getElementById('query').value;
+        const errorElement = document.getElementById('error');
+        const resultsElement = document.getElementById('results');
+
+        // Clear previous results and errors
+        errorElement.textContent = '';
+        resultsElement.innerHTML = '';
+
+        if (!query) {
+            errorElement.textContent = 'Please enter a song or artist name.';
+            return;
+        }
+
+        try {
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Something went wrong.');
+            }
+
+            const data = await response.json();
+            if (data.results.length === 0) {
+                errorElement.textContent = 'No results found.';
+                return;
+            }
+
+            data.results.forEach(result => {
+                const resultElement = document.createElement('div');
+                resultElement.classList.add('result');
+                resultElement.innerHTML = `
+                        <h2>${result.name}</h2>
+                        <p><strong>Artists:</strong> ${result.artists}</p>
+                        <p><strong>Album:</strong> ${result.album}</p>
+                        <a href="${result.link}" target="_blank">Listen on Spotify</a>
+                    `;
+                resultsElement.appendChild(resultElement);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            errorElement.textContent = error.message || 'An error occurred. Please try again.';
+        }
+    });
+</script>
+</body>
+</html>
